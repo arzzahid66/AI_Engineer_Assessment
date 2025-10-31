@@ -178,7 +178,52 @@ curl -X POST "http://localhost:8000/search" \
 - **Pydantic**: Schema validation for API requests and responses
 - **Type safety**: Ensures data integrity throughout the pipeline
 
-## Project Structure
+## Output Format
 
+Processed documents are saved to `output.json` with the following structure:
+
+```json
+{
+  "invoice.pdf": {
+    "filename": "invoice.pdf",
+    "index_name": "default",
+    "class": "Invoice",
+    "invoice_number": "INV-12345",
+    "date": "2024-01-15",
+    "company": "Acme Corp Inc.",
+    "total_amount": 1250.50
+  },
+  "resume.pdf": {
+    "filename": "resume.pdf",
+    "index_name": "default",
+    "class": "Resume",
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "555-123-4567",
+    "experience_years": 5
+  }
+}
 ```
-
+
+## How It Works
+
+1. **Upload**: PDF is uploaded via `/upload` endpoint
+2. **Text Extraction**: PyMuPDF extracts text from the PDF
+3. **Classification**: Zero-shot classifier determines document type
+4. **Data Extraction**: Regex patterns extract structured fields based on document type
+5. **Indexing**: Document text is embedded and stored in FAISS vector store
+6. **Search**: Semantic search converts queries to embeddings and finds similar documents
+7. **Results**: Extracted data is returned via API and saved to `output.json`
+
+## Notes
+
+- First run will download ML models (~500MB-1GB total)
+- Models run on CPU by default (GPU support available with CUDA-enabled PyTorch)
+- FAISS indexes are saved to `data/models/` for persistence
+- All processing happens locally - no external API calls
+
+## Troubleshooting
+
+**Models not downloading**: Ensure you have internet connection on first run
+**Out of memory**: Reduce batch size or use smaller models
+**CUDA errors**: Set device to CPU in classifier and retrieval modules
